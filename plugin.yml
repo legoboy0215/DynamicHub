@@ -1,0 +1,4 @@
+name: DynamicHub
+version: 0.0.0
+api: [1.2.0]
+main: dynamichub\DynamicHub
