@@ -5,6 +5,7 @@ namespace dynamichub;
 use dynamichub\api\CallbackCommand;
 use dynamichub\api\Minigame;
 use dynamichub\api\MinigameCommand;
+use dynamichub\event\memory\Arr;
 use dynamichub\event\MinigameEventExecutor;
 use dynamichub\event\MinigameHandler;
 use pocketmine\command\CommandSender;
@@ -17,6 +18,7 @@ use pocketmine\event\inventory\InventoryEvent;
 use pocketmine\event\level\LevelEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerEvent;
+use pocketmine\event\plugin\PluginDisableEvent;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\event\server\DataPacketSendEvent;
 use pocketmine\inventory\Inventory;
@@ -25,8 +27,11 @@ use pocketmine\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
 use pocketmine\tile\Tile;
+use pocketmine\utils\Config;
 
 class DynamicHub extends PluginBase implements Listener{
+	/** @var Config */
+	private $cfg;
 	/** @var Minigame[] */
 	private $games = [];
 	/** @var MinigameHandler[][] */
@@ -35,16 +40,19 @@ class DynamicHub extends PluginBase implements Listener{
 	private $registeredCmds = [];
 	private $redirectorCmds = [];
 	public function onEnable(){
-
+		$this->getServer()->getPluginManager()->registerEvents($this, $this);
+		$this->cfg = new Config($this->getDataFolder() . "config.yml", Config::YAML, [
+		]);
 	}
 	public function onDisable(){
-		foreach($this->games as $game){
-			$game->onDisable();
+		foreach($this->games as $i => $game){
+			$this->disableGame($i);
 		}
 	}
 	public function register(Minigame $minigame){
 		$this->games[$minigame->getName()] = $minigame;
-		$minigame->onEnable();
+		$minigame->enable();
+		$this->getMinigameConfig($minigame);
 	}
 	public function registerCommand(MinigameCommand $cmd){
 		$game = $cmd->getMinigame()->getName();
@@ -188,6 +196,20 @@ class DynamicHub extends PluginBase implements Listener{
 		}
 		return null;
 	}
+	public function onPluginDisabled(PluginDisableEvent $event){
+		foreach($this->games as $i => $game){
+			if($game->getOwningPlugin() === $event->getPlugin()){
+				$this->disableGame($i);
+			}
+		}
+	}
+	public function disableGame($id){
+		if(!isset($this->games[$id])){
+			return;
+		}
+		$this->games[$id]->disable();
+		unset($this->games[$id]);
+	}
 	/**
 	 * @param Server $server
 	 * @return self
@@ -197,5 +219,45 @@ class DynamicHub extends PluginBase implements Listener{
 	}
 	public static function registerMinigame(Server $server, Minigame $minigame){
 		self::getSafeInstance($server)->register($minigame);
+	}
+	public function getMinigameConfig(Minigame $minigame){
+		$name = $minigame->getName();
+		if(!$this->cfg->exists($name)){
+			$this->cfg->set($name, $minigame->getDefaultConfig());
+		}
+		$listener = new CallbackArrUpdateListener(function(Arr $arr) use($name){
+			$this->cfg->set($name, $arr->getAll());
+			$this->cfg->save();
+		});
+		return new Arr($listener, $this->cfg->get($name));
+	}
+
+	/**
+	 * @deprecated
+	 * @throws \BadMethodCallException
+	 */
+	public function saveConfig(){
+		throw new \BadMethodCallException("DynamicHub::saveConfig() is unsupported.");
+	}
+	/**
+	 * @deprecated
+	 * @throws \BadMethodCallException
+	 */
+	public function saveDefaultConfig(){
+		throw new \BadMethodCallException("DynamicHub::saveDefaultConfig() is unsupported.");
+	}
+	/**
+	 * @deprecated
+	 * @throws \BadMethodCallException
+	 */
+	public function reloadConfig(){
+		throw new \BadMethodCallException("DynamicHub::reloadConfig() is unsupported.");
+	}
+	/**
+	 * @deprecated
+	 * @throws \BadMethodCallException
+	 */
+	public function getConfig(){
+		throw new \BadMethodCallException("DynamicHub::getConfig() is unsupported.");
 	}
 }

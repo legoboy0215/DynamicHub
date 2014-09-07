@@ -1,0 +1,9 @@
+---
+name: DynamicHub_ExampleMinigame
+version: 0.0.0
+api:
+- 1.0.0
+main: exampleminigame\Loader
+depend:
+- DynamicHub
+...
