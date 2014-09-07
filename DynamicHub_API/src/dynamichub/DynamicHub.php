@@ -225,11 +225,20 @@ class DynamicHub extends PluginBase implements Listener{
 		if(!$this->cfg->exists($name)){
 			$this->cfg->set($name, $minigame->getDefaultConfig());
 		}
-		$listener = new CallbackArrUpdateListener(function(Arr $arr) use($name){
-			$this->cfg->set($name, $arr->getAll());
-			$this->cfg->save();
+		return $this->cfg->get($name);
+	}
+	public function getMinigameMemory(Minigame $minigame){
+		$dir = $this->getDataFolder() . "minigame_memory/";
+		if(!is_dir($dir)){
+			mkdir($dir);
+		}
+		$file = new Config($dir . $minigame->getName() . ".json", Config::JSON, $minigame->getDefaultMemory());
+		$listener = new CallbackArrUpdateListener(function(Arr $arr) use($file){
+			$file->setAll($arr->getAll());
+			$file->save();
 		});
-		return new Arr($listener, $this->cfg->get($name));
+		$data = $file->getAll();
+		return new Arr($listener, $data);
 	}
 
 	/**

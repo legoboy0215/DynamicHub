@@ -34,6 +34,12 @@ abstract class Minigame implements Listener{
 	public function getConfig(){
 		return $this->getDynamicHub()->getMinigameConfig($this);
 	}
+	public function getDefaultMemory(){
+		return [];
+	}
+	public function getMemory(){
+		return $this->getDynamicHub()->getMinigameMemory($this);
+	}
 
 	public final function isEnabled(){
 		return $this->enabled;
