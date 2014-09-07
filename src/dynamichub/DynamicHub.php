@@ -2,10 +2,12 @@
 
 namespace dynamichub;
 
+use dynamichub\api\CallbackCommand;
 use dynamichub\api\Minigame;
-use dynamichub\event\MinigameCommand;
+use dynamichub\api\MinigameCommand;
 use dynamichub\event\MinigameEventExecutor;
 use dynamichub\event\MinigameHandler;
+use pocketmine\command\CommandSender;
 use pocketmine\entity\Entity;
 use pocketmine\event\block\BlockEvent;
 use pocketmine\event\entity\EntityEvent;
@@ -18,6 +20,8 @@ use pocketmine\event\player\PlayerEvent;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\event\server\DataPacketSendEvent;
 use pocketmine\inventory\Inventory;
+use pocketmine\level\Level;
+use pocketmine\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
 use pocketmine\tile\Tile;
@@ -25,8 +29,11 @@ use pocketmine\tile\Tile;
 class DynamicHub extends PluginBase implements Listener{
 	/** @var Minigame[] */
 	private $games = [];
-	/** @var event\MinigameHandler[][] */
+	/** @var MinigameHandler[][] */
 	private $registeredHandles = [];
+	/** @var MinigameCommand[][] */
+	private $registeredCmds = [];
+	private $redirectorCmds = [];
 	public function onEnable(){
 
 	}
@@ -37,9 +44,52 @@ class DynamicHub extends PluginBase implements Listener{
 	}
 	public function register(Minigame $minigame){
 		$this->games[$minigame->getName()] = $minigame;
+		$minigame->onEnable();
 	}
 	public function registerCommand(MinigameCommand $cmd){
-		$this->getServer()->getCommandMap()->register($cmd->getMinigame()->getName(), $cmd);
+		$game = $cmd->getMinigame()->getName();
+		$name = trim(strtolower($cmd->getName()));
+		if(!isset($this->registeredCmds[$name])){
+			$this->registeredCmds[$name] = [];
+			$this->redirectorCmds[$name] = new CallbackCommand($this,
+				function(CallbackCommand $cmd, array $args, CommandSender $sender){
+					if(!($sender instanceof Player)){
+						return "Please run this command in-game.";
+					}
+					$minigame = $this->getMinigameByLevel($sender->getLevel());
+					if(!($minigame instanceof Minigame)){
+						return "The command is unavailable in your world.";
+					}
+					$game = $minigame->getName();
+					if(!isset($this->registeredCmds[$cmd->getName()]) or
+							!isset($this->registeredCmds[$cmd->getName()][$game])){
+						return "The command is unavailable in your world.";
+					}
+					/** @var MinigameCommand $mc */
+					$mc = $this->registeredCmds[$cmd->getName()][$game];
+					if(!$mc->hasPermission($sender)){
+						return "You don't have permission to run this command.";
+					}
+					return $mc->onRun($sender, $args);
+				}, $name, function(CommandSender $sender) use($name){
+					if(!($sender instanceof Player)){
+						return false;
+					}
+					$game = $this->getMinigameByLevel($sender->getLevel());
+					if(!($game instanceof Minigame)){
+						return false;
+					}
+					$game = $game->getName();
+					if(!isset($this->registeredCmds[$name]) or
+						!isset($this->registeredCmds[$name][$game])){
+						return false;
+					}
+					/** @var MinigameCommand $cmd */
+					$cmd = $this->registeredCmds[$name][$game];
+					return $cmd->hasPermission($sender) ? CallbackCommand::RESULT_TRUE:CallbackCommand::RESULT_FALSE;
+				});
+		}
+		$this->registeredCmds[$name][$game] = $cmd;
 	}
 	public function registerListener(Minigame $minigame, Listener $listener = null){
 		if($listener === null){
@@ -129,6 +179,14 @@ class DynamicHub extends PluginBase implements Listener{
 				break;
 			}
 		}
+	}
+	public function getMinigameByLevel(Level $level){
+		foreach($this->games as $game){
+			if($game->ownsWorld($level->getName())){
+				return $game;
+			}
+		}
+		return null;
 	}
 	/**
 	 * @param Server $server
