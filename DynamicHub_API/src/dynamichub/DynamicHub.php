@@ -45,7 +45,7 @@ class DynamicHub extends PluginBase implements Listener{
 		]);
 	}
 	public function onDisable(){
-		foreach($this->games as $i => $game){
+		foreach(array_keys($this->games) as $i){
 			$this->disableGame($i);
 		}
 	}
