@@ -1,0 +1,9 @@
+# DynamicHub API plugin manifest
+name: DynamicHub
+author: LegendOfMCPE
+version: 2.0.0 # after the rewrite
+api: [1.9.0]
+main: DynamicHub\DynamicHub
+load: STARTUP # before loading worlds
+softdepend:
+- SimpleAuth

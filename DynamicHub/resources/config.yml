@@ -1,0 +1,5 @@
+---
+# Initialize session when:
+# Options: "join", "auth" (requires SimpleAuth)
+sessionInit: auth
+...
