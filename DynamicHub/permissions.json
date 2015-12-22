@@ -1,0 +1,18 @@
+{
+  "dynamichub": {
+    "description": "Root permission node for DynamicHub permissions",
+    "default": "false",
+    "children": {
+      "edit": {
+        "description": "Permission to edit the world",
+        "default": "op",
+        "children": {
+          "hub": {
+            "description": "Permission to edit the hub world",
+            "default": "op"
+          }
+        }
+      }
+    }
+  }
+}

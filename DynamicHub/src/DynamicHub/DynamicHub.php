@@ -1,163 +1,190 @@
 <?php
 
+/*
+ * DynamicHub
+ *
+ * Copyright (C) 2015 LegendsOfMCPE
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * @author LegendsOfMCPE
+ */
+
 namespace DynamicHub;
 
+use DynamicHub\Config\JoinMethod\JoinListener;
+use DynamicHub\Config\JoinMethod\JoinMethod;
+use DynamicHub\Gamer\Gamer;
+use DynamicHub\Module\Event\EventListener;
+use DynamicHub\Module\Event\RegisteredGameEventHandler;
 use DynamicHub\Module\Game;
-use DynamicHub\Module\Hub;
-use DynamicHub\Session\SessionManager;
-use DynamicHub\Utils\Configuration;
+use DynamicHub\Module\HubModule;
+use DynamicHub\Module\Module;
+use DynamicHub\Utils\CallbackPluginTask;
+use pocketmine\event\Event;
+use pocketmine\event\EventPriority;
 use pocketmine\event\Listener;
-use pocketmine\event\player\PlayerJoinEvent;
-use pocketmine\event\player\PlayerQuitEvent;
-use pocketmine\event\plugin\PluginDisableEvent;
 use pocketmine\Player;
-use pocketmine\plugin\Plugin;
 use pocketmine\plugin\PluginBase;
+use pocketmine\Server;
 
-class DynamicHub extends PluginBase implements Listener{
-	/** @var string[] */
-	private static $register;
-	/** @var Game[] */
-	private $games = [];
-	/** @var Configuration */
-	private $cfg;
-	/** @var SessionManager */
-	private $sessionMgr;
-	/** @var Hub */
-	private $hub;
+class DynamicHub extends PluginBase{
+	private static $NAME = "DynamicHub";
+
+	/** @type Game[] */
+	private $loadedGames = [];
+	/** @type HubModule */
+	private $hubModule;
+	private $gamers = [];
+	/** @type EventListener[] */
+	private $listeners = [];
+
+	/** @type bool */
+	private $single;
+	/** @type JoinMethod[] */
+	private $joinMethods = [];
+
 	public function onLoad(){
-		self::$register = [];
-		$this->getLogger()->info("DynamicHub is now accepting game registration.");
+		self::$NAME = $this->getDescription()->getName();
 	}
+
 	public function onEnable(){
 		$this->saveDefaultConfig();
-		foreach(self::$register as $class => $contextName){
-			$context = $this->getServer()->getPluginManager()->getPlugin($contextName);
-			if(!($context instanceof Plugin)){
+		$this->single = $this->getConfig()->get("single", false);
+		if($this->single){
+			$this->getServer()->getScheduler()->scheduleDelayedTask(new CallbackPluginTask($this, function(){
+				if(count($this->loadedGames) === 0){
+					$this->getLogger()->critical("No games loaded");
+					$this->getServer()->getPluginManager()->disablePlugin($this);
+				}
+			}), 1);
+		}
+		foreach($this->joinMethods as $method){
+			$m = JoinMethod::get($this, $method);
+			if($m !== null){
+				$this->joinMethods[] = $m;
+			}
+		}
+		new JoinListener($this);
+		$this->gameEventListener = new GameEventListener($this);
+	}
+
+	/**
+	 * Load a {@link Game} into the plugin
+	 *
+	 * @param Game $game
+	 *
+	 * @throws \RuntimeException
+	 */
+	public function loadGame(Game $game){
+		$owner = $game->getOwner();
+		if(!in_array($this->getDescription()->getName(), $owner->getDescription()->getDepend())){
+			throw new \RuntimeException("A Game must be owned by a plugin that depends on DynamicHub");
+		}
+		if($this->single and count($this->loadedGames) > 0){
+			throw new \RuntimeException("Only one Game can be loaded on this server limited in config");
+		}
+		$this->loadedGames[strtolower($game->getName()->get())] = $game;
+		$game->onLoaded($this);
+	}
+
+	public function unloadGame(Game $game){
+		// TODO quit players
+		// TODO unregister listeners
+	}
+
+	public function registerListeners(Game $game, Listener $listener){
+		foreach((new \ReflectionClass($listener))->getMethods(\ReflectionMethod::IS_PUBLIC) as $method){
+			if($method->isStatic()){
 				continue;
 			}
-			$class = new \ReflectionClass($class);
-			/** @var Game $game */
-			$game = $class->newInstance($this, $context);
-			$this->games[$game->getUniqueName()] = $game;
-		}
-		$this->getServer()->getPluginManager()->registerEvents($this, $this);
-		$this->cfg = new Configuration($this);
-		if($this->cfg->sessionInit === "auth"){
-			if(!($this->getServer()->getPluginManager()->getPlugin("SimpleAuth") instanceof Plugin)){
-				$this->getLogger()->warning("SimpleAuth not laoded! sessionInit config property will be changed to \"join\".");
-				$this->cfg->sessionInit = "join";
+			$parameters = $method->getParameters();
+			if(count($parameters) !== 1){
+				continue;
 			}
-			else{
-				$this->getServer()->getPluginManager()->registerEvents(new SimpleAuthListener($this), $this);
+			if(!($parameters[0]->getClass() instanceof \ReflectionClass)){
+				continue;
 			}
-		}
-		elseif($this->cfg->sessionInit !== "join"){
-			throw new \RuntimeException("Unknown sessionInit value: \"{$this->cfg->sessionInit}\"");
-		}
-		$this->sessionMgr = new SessionManager($this);
-		$this->hub = new Hub($this);
-		foreach($this->getServer()->getOnlinePlayers() as $player){
-			$this->startSession($player);
-		}
-	}
-	public function onDisable(){
-		foreach($this->games as $game){
-			$game->onDisable();
-		}
-		foreach($this->getServer()->getOnlinePlayers() as $player){
-			$this->closeSession($player);
+			if(!$parameters[0]->getClass()->isSubclassOf(Event::class)){
+				continue;
+			}
+			$priority = EventPriority::NORMAL;
+			$ignoreCancelled = false;
+			if(preg_match("/^[\t ]*\\* @priority[\t ]{1,}([a-zA-Z]{1,})/m", (string) $method->getDocComment(), $matches) > 0){
+				$matches[1] = strtoupper($matches[1]);
+				if(defined(EventPriority::class . "::" . $matches[1])){
+					$priority = constant(EventPriority::class . "::" . $matches[1]);
+				}
+			}
+			if(preg_match("/^[\t ]*\\* @ignoreCancelled[\t ]{1,}([a-zA-Z]{1,})/m", (string) $method->getDocComment(), $matches) > 0){
+				$matches[1] = strtolower($matches[1]);
+				if($matches[1] === "false"){
+					$ignoreCancelled = false;
+				}elseif($matches[1] === "true"){
+					$ignoreCancelled = true;
+				}
+			}
+			$event = $parameters[0]->getClass()->getName();
+			$reflection = new \ReflectionClass($event);
+			if(strpos((string) $reflection->getDocComment(), "@deprecated") !== false and $this->getServer()->getProperty("settings.deprecated-verbose", true)){
+				$this->getLogger()->warning($this->getServer()->getLanguage()->translateString("pocketmine.plugin.deprecatedEvent", [
+					$game->getOwner()->getName(),
+					$event,
+					get_class($listener) . "->" . $method->getName() . "()",
+				]));
+			}
+			if(!isset($this->listeners[$identifier = EventListener::identifier($event, $priority, $ignoreCancelled)])){
+				$this->listeners[$identifier] = new EventListener($this, $event, $priority, $ignoreCancelled);
+			}
+			$this->listeners[$identifier]->addHandler(new RegisteredGameEventHandler($game, $listener, $method->getName()));
 		}
 	}
 
-	public function startSession(Player $player){
-		$this->sessionMgr->startSession($player);
-	}
-	public function closeSession(Player $player){
-		$this->sessionMgr->endSession($player);
-	}
-	/**
-	 * Returns the corresponding {@link \DynamicHub\Session\Session Session} object for $player
-	 * @param Player $player
-	 * @return Session\Session|null
-	 */
-	public function getSession(Player $player){
-		return $this->sessionMgr->getSession($player);
+	public function onPlayerAuth(Player $player){
+		$this->gamers[$player->getId()] = new Gamer($this, $player);
 	}
 
-	public function getGame($name){
-		return isset($this->games[$name]) ? $this->games[$name]:null;
-	}
-	public function getGames(){
-		return $this->games;
-	}
-	public function getHub(){
-		return $this->hub;
-	}
-
-	public function onJoin(PlayerJoinEvent $event){
-		if($this->cfg->sessionInit === "join"){
-			$this->startSession($event->getPlayer());
-		}
-	}
-	public function onQuit(PlayerQuitEvent $event){
-		$this->closeSession($event->getPlayer());
-	}
-	public function onPluginDisabled(PluginDisableEvent $event){
-		if($event->getPlugin() === $this){
-			return;
-		}
-		foreach($this->games as $k => $game){
-			if($game->getContext() === $event->getPlugin()){
-				$game->onDisable();
-				unset($this->games[$k]);
-			}
-		}
+	public function isSingle() : bool{
+		return $this->single;
 	}
 
 	/**
-	 * @param string $className
-	 * @param Plugin $context
-	 * @param bool   $overwrite
-	 * @return bool whether the game is already registered
+	 * @return JoinMethod[]
 	 */
-	public static function registerGame($className, Plugin $context, $overwrite = false){
-		if(isset(self::$register[$className]) and !$overwrite){
-			return false;
+	public function getJoinMethods() : array{
+		return $this->joinMethods;
+	}
+
+	/**
+	 * @param string $name
+	 *
+	 * @return Module|null
+	 */
+	public function getModule(string $name){
+		$lower = strtolower($name);
+		if($lower === strtolower(HubModule::NAME)){
+			return $this->hubModule;
 		}
-		try{
-			class_exists($className, true); // attempt to load it with the autoloader
-			$class = new \ReflectionClass($className);
-			if(!$class->isSubclassOf(Game::class)){
-				throw new \Exception("Class '$className' passed into DynamicHub::registerGame() must extend DynamicHub\\Game");
-			}
-			/** @var \ReflectionMethod $constructor */
-			$constructor = $class->getConstructor();
-			$cnt = $constructor->getNumberOfRequiredParameters();
-			if($cnt > 2){
-				throw new \Exception("Attempt to register game '$className' with too many required parameters");
-			}
-			$params = $constructor->getParameters();
-			if(isset($params[0])){
-				$class = $params[0]->getClass();
-				if($class instanceof \ReflectionClass and !is_subclass_of(DynamicHub::class, $class->getName())){
-					throw new \Exception("Incorrect argument 1 for $className::__construct()");
-				}
-				if(isset($params[1])){
-					$class = $params[1]->getClass();
-					if($class instanceof \ReflectionClass and !is_subclass_of(Plugin::class, $class->getName())){
-						throw new \Exception("Incorrect argument 2 for $className::__construct()");
-					}
-				}
-			}
+		return $this->loadedGames[$lower] ?? null;
+	}
+
+	public function getHubModule() : HubModule{
+		return $this->hubModule;
+	}
+
+	/**
+	 * @param Server $server
+	 *
+	 * @return DynamicHub|null
+	 */
+	public static function getInstance(Server $server){
+		$me = $server->getPluginManager()->getPlugin(self::$NAME);
+		if($me instanceof DynamicHub and $me->isEnabled()){
+			return $me;
 		}
-		catch(\Exception $e){
-			if($e instanceof \RuntimeException){
-				throw new \RuntimeException("Class '$className' passed into DynamicHub::registerGame() doesn't exist");
-			}
-			throw new \RuntimeException($e->getMessage());
-		}
-		self::$register[$className] = $context->getName();
-		return true;
+		return null;
 	}
 }

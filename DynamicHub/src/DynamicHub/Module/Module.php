@@ -1,20 +1,48 @@
 <?php
 
+/*
+ * DynamicHub
+ *
+ * Copyright (C) 2015 LegendsOfMCPE
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * @author LegendsOfMCPE
+ */
+
 namespace DynamicHub\Module;
 
-use DynamicHub\Session\Session;
+use DynamicHub\Gamer\Gamer;
+use DynamicHub\Utils\Translatable;
 
 abstract class Module{
-	/**
-	 * @return string
-	 */
-	public abstract function getUniqueName();
-	/**
-	 * @return \pocketmine\plugin\Plugin
-	 */
-	public abstract function getContext();
+	public abstract function getName() : Translatable;
 
-	public abstract function onJoin(Session $session);
-	public abstract function onQuit(Session $session);
-	public abstract function onDisable();
+	public final function join(Gamer $gamer){
+		$items = $gamer->getData()->getItems($this->getName()->get());
+		$inv = $gamer->getPlayer()->getInventory();
+		$inv->clearAll(); // rude
+		foreach($items as $slot => $item){
+			$inv->setItem($slot, $item);
+		}
+		$this->onJoin($gamer);
+	}
+
+	public abstract function onJoin(Gamer $gamer);
+
+	public final function quit(Gamer $gamer){
+		$this->onQuit($gamer);
+		$inv = $gamer->getPlayer()->getInventory();
+		$gamer->getData()->setItems($inv->getContents());
+		$inv->clearAll();
+	}
+
+	public abstract function onQuit(Gamer $gamer);
+
+	public function __toString(){
+		return $this->getName()->get();
+	}
 }

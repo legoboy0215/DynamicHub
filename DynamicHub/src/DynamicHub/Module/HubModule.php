@@ -15,28 +15,22 @@
 
 namespace DynamicHub\Module;
 
-use DynamicHub\DynamicHub;
+use DynamicHub\Gamer\Gamer;
+use DynamicHub\Utils\StaticTranslatable;
 use DynamicHub\Utils\Translatable;
-use pocketmine\plugin\Plugin;
 
-abstract class Game extends Module{
-	private $owner;
-	private $name;
-
-	protected function __construct(Plugin $owner, Translatable $name){
-		$this->owner = $owner;
-		$this->name = $name;
-	}
-
-	public function onLoaded(DynamicHub $hub){
-
-	}
-
-	public function getOwner() : Plugin{
-		return $this->owner;
-	}
+class HubModule extends Module{
+	const NAME = "Hub";
 
 	public function getName() : Translatable{
-		return $this->name;
+		return new StaticTranslatable(self::NAME); // TODO translate
+	}
+
+	public function onJoin(Gamer $gamer){
+		// TODO: Implement onJoin() method.
+	}
+
+	public function onQuit(Gamer $gamer){
+		// TODO: Implement onQuit() method.
 	}
 }
