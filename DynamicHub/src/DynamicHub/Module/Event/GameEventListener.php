@@ -20,7 +20,7 @@ use pocketmine\event\Event;
 use pocketmine\event\Listener;
 use pocketmine\plugin\EventExecutor;
 
-class EventListener implements EventExecutor, Listener{
+class GameEventListener implements EventExecutor, Listener{
 	private $hub;
 	private $identifier;
 	/** @type RegisteredGameEventHandler[]|\SplObjectStorage */

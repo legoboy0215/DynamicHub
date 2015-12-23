@@ -15,6 +15,7 @@
 
 namespace DynamicHub\Module;
 
+use DynamicHub\DynamicHub;
 use DynamicHub\Gamer\Gamer;
 use DynamicHub\Utils\StaticTranslatable;
 use DynamicHub\Utils\Translatable;
@@ -22,15 +23,21 @@ use DynamicHub\Utils\Translatable;
 class HubModule extends Module{
 	const NAME = "Hub";
 
+	private $main;
+
+	public function __construct(DynamicHub $main){
+		$this->main = $main;
+	}
+
 	public function getName() : Translatable{
 		return new StaticTranslatable(self::NAME); // TODO translate
 	}
 
 	public function onJoin(Gamer $gamer){
-		// TODO: Implement onJoin() method.
+
 	}
 
 	public function onQuit(Gamer $gamer){
-		// TODO: Implement onQuit() method.
+
 	}
 }

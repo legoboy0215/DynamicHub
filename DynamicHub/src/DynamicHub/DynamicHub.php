@@ -18,7 +18,7 @@ namespace DynamicHub;
 use DynamicHub\Config\JoinMethod\JoinListener;
 use DynamicHub\Config\JoinMethod\JoinMethod;
 use DynamicHub\Gamer\Gamer;
-use DynamicHub\Module\Event\EventListener;
+use DynamicHub\Module\Event\GameEventListener;
 use DynamicHub\Module\Event\RegisteredGameEventHandler;
 use DynamicHub\Module\Game;
 use DynamicHub\Module\HubModule;
@@ -38,8 +38,9 @@ class DynamicHub extends PluginBase{
 	private $loadedGames = [];
 	/** @type HubModule */
 	private $hubModule;
+	/** @type Gamer[] */
 	private $gamers = [];
-	/** @type EventListener[] */
+	/** @type GameEventListener[] */
 	private $listeners = [];
 
 	/** @type bool */
@@ -61,15 +62,16 @@ class DynamicHub extends PluginBase{
 					$this->getServer()->getPluginManager()->disablePlugin($this);
 				}
 			}), 1);
-		}
-		foreach($this->joinMethods as $method){
-			$m = JoinMethod::get($this, $method);
-			if($m !== null){
-				$this->joinMethods[] = $m;
+		}else{
+			foreach($this->joinMethods as $method){
+				$m = JoinMethod::get($this, $method);
+				if($m !== null){
+					$this->joinMethods[] = $m;
+				}
 			}
+			new JoinListener($this);
+			$this->hubModule = new HubModule($this);
 		}
-		new JoinListener($this);
-		$this->gameEventListener = new GameEventListener($this);
 	}
 
 	/**
@@ -136,8 +138,8 @@ class DynamicHub extends PluginBase{
 					get_class($listener) . "->" . $method->getName() . "()",
 				]));
 			}
-			if(!isset($this->listeners[$identifier = EventListener::identifier($event, $priority, $ignoreCancelled)])){
-				$this->listeners[$identifier] = new EventListener($this, $event, $priority, $ignoreCancelled);
+			if(!isset($this->listeners[$identifier = GameEventListener::identifier($event, $priority, $ignoreCancelled)])){
+				$this->listeners[$identifier] = new GameEventListener($this, $event, $priority, $ignoreCancelled);
 			}
 			$this->listeners[$identifier]->addHandler(new RegisteredGameEventHandler($game, $listener, $method->getName()));
 		}
@@ -145,6 +147,13 @@ class DynamicHub extends PluginBase{
 
 	public function onPlayerAuth(Player $player){
 		$this->gamers[$player->getId()] = new Gamer($this, $player);
+	}
+
+	public function onPlayerQuit(Player $player){
+		if(isset($this->gamers[$player->getId()])){
+			$this->gamers[$player->getId()]->onQuit();
+			unset($this->gamers[$player->getId()]);
+		}
 	}
 
 	public function isSingle() : bool{

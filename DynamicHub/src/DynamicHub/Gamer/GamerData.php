@@ -24,17 +24,20 @@ class GamerData{
 	public $username;
 	/** @type string */
 	public $lastModule;
-	/** @type Item[][] */
+	/** @type array[][] */
 	public $inventories = [];
 
-	public static function defaultInstance(DynamicHub $hub, $username) : GamerData{
-		$data = new GamerData;
-		$data->username = $username;
+	public static function defaultInstance(DynamicHub $hub, string $username) : GamerData{
+		$data = new GamerData(strtolower($username));
 		$data->lastModule = HubModule::NAME;
 		$data->inventories = [
 			strtolower(HubModule::NAME) => $hub->getConfig()->getNested("hub.defaultItems"),
 		];
 		return $data;
+	}
+
+	public function __construct(string $username){
+		$this->username = $username;
 	}
 
 	/**
