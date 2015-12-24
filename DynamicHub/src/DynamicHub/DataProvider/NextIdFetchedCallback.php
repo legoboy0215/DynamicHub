@@ -15,14 +15,6 @@
 
 namespace DynamicHub\DataProvider;
 
-use DynamicHub\Gamer\GamerData;
-
-interface DataProvider{
-	public function fetchData(string $name, DataFetchedCallback $callback);
-
-	public function saveData(GamerData $data);
-
-	public function fetchNextId(NextIdFetchedCallback $callback);
-
-	public function finalize();
+interface NextIdFetchedCallback{
+	public function onNextIdFetched(int $nextId);
 }

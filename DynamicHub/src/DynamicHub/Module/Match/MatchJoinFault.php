@@ -13,16 +13,14 @@
  * @author LegendsOfMCPE
  */
 
-namespace DynamicHub\DataProvider;
+namespace DynamicHub\Module\Match;
 
-use DynamicHub\Gamer\GamerData;
+class MatchJoinFault{
+	const FULL = 0;
+	const SEMI_FULL = 1;
+	const CLOSED = 2;
+	const NO_PERM = 3;
+	const NOT_IN_GAME = 4;
 
-interface DataProvider{
-	public function fetchData(string $name, DataFetchedCallback $callback);
-
-	public function saveData(GamerData $data);
-
-	public function fetchNextId(NextIdFetchedCallback $callback);
-
-	public function finalize();
+	const SUCCESS = -1;
 }

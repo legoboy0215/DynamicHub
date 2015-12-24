@@ -21,6 +21,8 @@ use pocketmine\plugin\Plugin;
 
 abstract class Game extends Module{
 	private $owner;
+	/** @type DynamicHub */
+	private $hub = null;
 	private $name;
 
 	protected function __construct(Plugin $owner, Translatable $name){
@@ -29,11 +31,15 @@ abstract class Game extends Module{
 	}
 
 	public function onLoaded(DynamicHub $hub){
-
+		$this->hub = $hub;
 	}
 
 	public function getOwner() : Plugin{
 		return $this->owner;
+	}
+
+	public function getHub(){
+		return $this->hub;
 	}
 
 	public function getName() : Translatable{

@@ -15,8 +15,11 @@
 
 namespace DynamicHub;
 
+use DynamicHub\Gamer\Gamer;
 use pocketmine\event\Listener;
+use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\player\PlayerQuitEvent;
+use pocketmine\Player;
 
 class StandardListener implements Listener{
 	private $hub;
@@ -26,7 +29,34 @@ class StandardListener implements Listener{
 		$hub->getServer()->getPluginManager()->registerEvents($this, $hub);
 	}
 
+	/**
+	 * @param PlayerQuitEvent $event
+	 *
+	 * @priority MONITOR
+	 */
 	public function onQuit(PlayerQuitEvent $event){
 		$this->hub->onPlayerQuit($event->getPlayer());
+	}
+
+	/**
+	 * @param PlayerChatEvent $event
+	 *
+	 * @priority        HIGH
+	 * @ignoreCancelled true
+	 */
+	public function onChat(PlayerChatEvent $event){
+		$gamer = $this->hub->getGamerForPlayer($event->getPlayer());
+		if($gamer !== null){
+			$module = $gamer->getModule();
+			if($module === null){
+				$event->setCancelled();
+				$gamer->getPlayer()->sendMessage("You cannot chat until your account is loaded!"); // TODO translate
+				return;
+			}
+			$event->setRecipients(array_filter($event->getRecipients(), function(Player $player) use ($module){
+				$gamer = $this->hub->getGamerForPlayer($player);
+				return $gamer instanceof Gamer and $gamer->getModule() === $module;
+			}));
+		}
 	}
 }

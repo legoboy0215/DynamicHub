@@ -13,16 +13,16 @@
  * @author LegendsOfMCPE
  */
 
-namespace DynamicHub\DataProvider;
+namespace DynamicHub\Module\Match;
 
-use DynamicHub\Gamer\GamerData;
+class MatchBaseConfig{
+	// players
+	public $maxPlayers;
+	public $semiMaxPlayers;
+	public $minPlayers;
 
-interface DataProvider{
-	public function fetchData(string $name, DataFetchedCallback $callback);
-
-	public function saveData(GamerData $data);
-
-	public function fetchNextId(NextIdFetchedCallback $callback);
-
-	public function finalize();
+	// time, in seconds
+	public $minWaitTime;
+	public $maxWaitTime;
+	public $maxMatchTime;
 }

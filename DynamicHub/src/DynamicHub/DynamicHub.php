@@ -17,6 +17,7 @@ namespace DynamicHub;
 
 use DynamicHub\Config\JoinMethod\JoinListener;
 use DynamicHub\Config\JoinMethod\JoinMethod;
+use DynamicHub\DataProvider\DataProvider;
 use DynamicHub\Gamer\Gamer;
 use DynamicHub\Module\Event\GameEventListener;
 use DynamicHub\Module\Event\RegisteredGameEventHandler;
@@ -42,6 +43,8 @@ class DynamicHub extends PluginBase{
 	private $gamers = [];
 	/** @type GameEventListener[] */
 	private $listeners = [];
+	/** @type DataProvider */
+	private $dataProvider;
 
 	/** @type bool */
 	private $single;
@@ -74,6 +77,13 @@ class DynamicHub extends PluginBase{
 		}
 	}
 
+	public function onDisable(){
+		if($this->dataProvider !== null){
+			$this->dataProvider->finalize();
+			unset($this->dataProvider);
+		}
+	}
+
 	/**
 	 * Load a {@link Game} into the plugin
 	 *
@@ -91,6 +101,7 @@ class DynamicHub extends PluginBase{
 		}
 		$this->loadedGames[strtolower($game->getName()->get())] = $game;
 		$game->onLoaded($this);
+		$this->getLogger()->info("Loaded " . $game->getName());
 	}
 
 	public function unloadGame(Game $game){
@@ -156,6 +167,26 @@ class DynamicHub extends PluginBase{
 		}
 	}
 
+	/**
+	 * @param string $name
+	 * @param bool   $exact
+	 *
+	 * @return Gamer|null
+	 */
+	public function getGamerByName(string $name, bool $exact = false){
+		$player = ($exact ? $this->getServer()->getPlayerExact($name) : $this->getServer()->getPlayer($name));
+		return $player !== null ? $this->getGamerForPlayer($player) : null;
+	}
+
+	/**
+	 * @param Player $player
+	 *
+	 * @return Gamer|null
+	 */
+	public function getGamerForPlayer(Player $player){
+		return $this->gamers[$player->getId()] ?? null;
+	}
+
 	public function isSingle() : bool{
 		return $this->single;
 	}
@@ -182,6 +213,10 @@ class DynamicHub extends PluginBase{
 
 	public function getHubModule() : HubModule{
 		return $this->hubModule;
+	}
+
+	public function getDataProvider() : DataProvider{
+		return $this->dataProvider;
 	}
 
 	/**

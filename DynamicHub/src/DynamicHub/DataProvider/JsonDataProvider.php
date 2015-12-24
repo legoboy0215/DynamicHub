@@ -17,28 +17,35 @@ namespace DynamicHub\DataProvider;
 
 use DynamicHub\DynamicHub;
 use DynamicHub\Gamer\GamerData;
+use pocketmine\utils\Binary;
 
 class JsonDataProvider implements DataProvider{
 	private $hub;
+	private $nextId;
+	private $dir, $playerDir, $nextIdFile;
 
 	public function __construct(DynamicHub $hub){
 		$this->hub = $hub;
+		$this->dir = $hub->getDataFolder() . "data/json/";
+		$this->playerDir = $this->dir . "players/";
+		$this->nextIdFile = $this->dir . "nextId.txt";
+		$this->nextId = (is_file($this->dir) ? Binary::readLong(file_get_contents($this->dir . $this->nextIdFile)) : 0);
 	}
 
-	public function getData(string $name) : GamerData{
+	public function fetchData(string $name, DataFetchedCallback $callback){
 		$dir = $this->hub->getDataFolder() . "players/";
 		$name = strtolower($name);
 		$file = $dir . $name . ".json";
 		if(!is_file($file)){
-			return GamerData::defaultInstance($this->hub, $name);
+			$data = GamerData::defaultInstance($this->hub, $name);
 		}else{
 			$input = json_decode(file_get_contents($file), true);
 			$data = new GamerData($name);
 			foreach($input as $k => $v){
 				$data->{$k} = $v;
 			}
-			return $data;
 		}
+		$callback->onDataFetched($data);
 	}
 
 	public function saveData(GamerData $data){
@@ -49,5 +56,13 @@ class JsonDataProvider implements DataProvider{
 		$file = $dir . $data->username . ".json";
 		file_put_contents($file, json_encode($data,
 			JSON_PRETTY_PRINT | JSON_BIGINT_AS_STRING | JSON_UNESCAPED_SLASHES));
+	}
+
+	public function fetchNextId(NextIdFetchedCallback $callback){
+		return $this->nextId++;
+	}
+
+	public function finalize(){
+		file_put_contents($this->nextIdFile, Binary::writeLong($this->nextId));
 	}
 }

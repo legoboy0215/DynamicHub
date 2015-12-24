@@ -16,7 +16,6 @@
 namespace DynamicHub\Config\JoinMethod;
 
 use DynamicHub\DynamicHub;
-use DynamicHub\Gamer\Gamer;
 use pocketmine\block\SignPost;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
@@ -40,9 +39,8 @@ class JoinListener implements Listener{
 	 * @priority HIGHEST
 	 */
 	public function onMove(PlayerMoveEvent $event){
-		/** @type Gamer $gamer TODO get */
-		$gamer = null;
 		$player = $event->getPlayer();
+		$gamer = $this->hub->getGamerForPlayer($player);
 		$delta = $event->getTo()->subtract($event->getFrom());
 		$bb = clone $player->getBoundingBox();
 		$bb->offset($delta->x, $delta->y, $delta->z);
@@ -68,9 +66,8 @@ class JoinListener implements Listener{
 		if($event->getAction() !== PlayerInteractEvent::RIGHT_CLICK_BLOCK){
 			return;
 		}
-		/** @type Gamer $gamer TODO get */
-		$gamer = null;
 		$player = $event->getPlayer();
+		$gamer = $this->hub->getGamerForPlayer($player);
 		$item = $event->getItem();
 		$block = $event->getBlock();
 		if($block instanceof SignPost){

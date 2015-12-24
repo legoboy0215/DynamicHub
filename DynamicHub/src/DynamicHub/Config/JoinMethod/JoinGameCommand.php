@@ -16,21 +16,35 @@
 namespace DynamicHub\Config\JoinMethod;
 
 use DynamicHub\DynamicHub;
+use DynamicHub\Gamer\Gamer;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\PluginIdentifiableCommand;
+use pocketmine\Player;
 
 class JoinGameCommand extends Command implements PluginIdentifiableCommand{
 	private $hub;
+	private $gameName;
 
-	public function __construct(DynamicHub $hub, string $name, $gameName, array $aliases){
+	public function __construct(DynamicHub $hub, string $name, string $gameName, array $aliases){
 		parent::__construct($name, "Join $gameName", "/$name", $aliases);
 		$this->hub = $hub;
+		$this->gameName = $gameName;
 		$hub->getServer()->getCommandMap()->register("join", $this);
 	}
 
 	public function execute(CommandSender $sender, $commandLabel, array $args){
-		// TODO
+		$module = $this->hub->getModule($this->gameName);
+		if(!($sender instanceof Player)){
+			$sender->sendMessage("Please run this command in-game");
+			return true;
+		}
+		if(!(($gamer = $this->hub->getGamerForPlayer($sender)) instanceof Gamer)){
+			$sender->sendMessage("Please wait while your account is being loaded.");
+			return true;
+		}
+		$gamer->setModule($module);
+		return true;
 	}
 
 	public function getPlugin(){

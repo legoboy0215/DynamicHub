@@ -15,8 +15,45 @@
 
 namespace DynamicHub\Module\Match;
 
+use DynamicHub\DataProvider\NextIdFetchedCallback;
+use DynamicHub\DynamicHub;
 use DynamicHub\Module\Game;
+use DynamicHub\Utils\CallbackPluginTask;
 
-abstract class MatchBasedGame extends Game{
+abstract class MatchBasedGame extends Game implements NextIdFetchedCallback{
+	/** @type Match[] */
+	private $matches = [];
 
+	public function onLoaded(DynamicHub $hub){
+		parent::onLoaded($hub);
+		$this->getOwner()->getServer()->getScheduler()->scheduleRepeatingTask(
+			new CallbackPluginTask($this->getOwner(), [$this, "halfSecondTick"]), 10);
+	}
+
+	/**
+	 * @internal
+	 */
+	public function halfSecondTick(){
+		$count = 0;
+		foreach($this->matches as $match){
+			if($match->getState() === MatchState::OPEN){
+				$count++;
+			}
+		}
+		if($count < $this->getMinOpenGames()){
+			$this->getHub()->getDataProvider()->fetchNextId($this);
+		}
+
+		foreach($this->matches as $match){
+			$match->halfSecondTick();
+		}
+	}
+
+	public abstract function getMinOpenGames() : int;
+
+	public function onNextIdFetched(int $nextId){
+		$this->matches[$nextId] = $this->newMatch($nextId);
+	}
+
+	public abstract function newMatch(int $matchId) : Match;
 }

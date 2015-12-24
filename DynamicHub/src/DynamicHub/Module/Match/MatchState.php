@@ -13,16 +13,13 @@
  * @author LegendsOfMCPE
  */
 
-namespace DynamicHub\DataProvider;
+namespace DynamicHub\Module\Match;
 
-use DynamicHub\Gamer\GamerData;
-
-interface DataProvider{
-	public function fetchData(string $name, DataFetchedCallback $callback);
-
-	public function saveData(GamerData $data);
-
-	public function fetchNextId(NextIdFetchedCallback $callback);
-
-	public function finalize();
+class MatchState{
+	const OPEN = 0;
+	const PREPARING = 1;
+	const LOADING = 2;
+	const RUNNING = 3;
+	const FINALIZING = 4;
+	const GARBAGE = 5;
 }

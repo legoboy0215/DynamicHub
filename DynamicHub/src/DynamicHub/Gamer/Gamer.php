@@ -32,10 +32,12 @@ class Gamer{
 		$this->player = $player;
 		$player->blocked = true;
 		// TODO load data
+		$player->sendMessage("Loading account data for you. Please wait..."); // TODO translate
 	}
 
 	public function onDataLoaded(GamerData $data){
 		$this->data = $data;
+		$this->player->sendMessage("Your account has been loaded."); // TODO translate
 		$this->player->blocked = false;
 		$lastModule = $this->hub->getModule($data->lastModule);
 		if($lastModule === null){
@@ -66,10 +68,18 @@ class Gamer{
 		return $this->player;
 	}
 
+	public function getModule(){
+		return $this->module;
+	}
+
 	public function getData() : GamerData{
 		return $this->data;
 	}
 
 	public function saveData(){
+	}
+
+	public function getId(){
+		return $this->player->getId();
 	}
 }
