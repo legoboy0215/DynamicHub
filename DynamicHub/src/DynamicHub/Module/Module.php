@@ -15,8 +15,10 @@
 
 namespace DynamicHub\Module;
 
+use DynamicHub\DynamicHub;
 use DynamicHub\Gamer\Gamer;
 use DynamicHub\Utils\Translatable;
+use pocketmine\plugin\Plugin;
 
 abstract class Module{
 	public abstract function getName() : Translatable;
@@ -41,6 +43,10 @@ abstract class Module{
 	}
 
 	public abstract function onQuit(Gamer $gamer);
+
+	public abstract function getHub() : DynamicHub;
+
+	public abstract function getOwner() : Plugin;
 
 	public function __toString(){
 		return $this->getName()->get();

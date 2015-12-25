@@ -16,8 +16,11 @@
 namespace DynamicHub\Module\Event;
 
 use DynamicHub\DynamicHub;
+use pocketmine\event\entity\EntityEvent;
 use pocketmine\event\Event;
 use pocketmine\event\Listener;
+use pocketmine\event\player\PlayerEvent;
+use pocketmine\Player;
 use pocketmine\plugin\EventExecutor;
 
 class GameEventListener implements EventExecutor, Listener{
@@ -34,12 +37,43 @@ class GameEventListener implements EventExecutor, Listener{
 	}
 
 	public function addHandler(RegisteredGameEventHandler $handler){
-		$this->handlers->attach($handler, $handler->getGame());
+		$this->handlers->attach($handler, $handler->getModule());
 	}
 
 	public function execute(Listener $listener, Event $event){
-		foreach($this->handlers as $handler){
-			$handler->execute($event);
+		$module = null;
+		if($event instanceof PlayerEvent){
+			$player = $event->getPlayer();
+			$gamer = $this->hub->getGamerForPlayer($player);
+			if($gamer !== null){
+				$module = $gamer->getModule();
+			}
+		}elseif($event instanceof EntityEvent){
+			$entity = $event->getEntity();
+			if($entity instanceof Player){
+				$gamer = $this->hub->getGamerForPlayer($entity);
+				if($gamer !== null){
+					$module = $gamer->getModule();
+				}
+			}
+		}else{
+			$callable = [$event, "getPlayer"];
+			if(is_callable($callable)){
+				$player = $callable();
+				if($player instanceof Player){
+					$gamer = $this->hub->getGamerForPlayer($player);
+					if($gamer !== null){
+						$module = $gamer->getModule();
+					}
+				}
+			}
+		}
+		if(isset($module)){
+			foreach($this->handlers as $handler){
+				if($handler->getModule() === $module){
+					$handler->execute($event);
+				}
+			}
 		}
 	}
 

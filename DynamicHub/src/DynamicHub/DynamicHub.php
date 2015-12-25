@@ -25,9 +25,11 @@ use DynamicHub\Module\Game;
 use DynamicHub\Module\HubModule;
 use DynamicHub\Module\Module;
 use DynamicHub\Utils\CallbackPluginTask;
+use pocketmine\event\entity\EntityEvent;
 use pocketmine\event\Event;
 use pocketmine\event\EventPriority;
 use pocketmine\event\Listener;
+use pocketmine\event\player\PlayerEvent;
 use pocketmine\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
@@ -109,7 +111,7 @@ class DynamicHub extends PluginBase{
 		// TODO unregister listeners
 	}
 
-	public function registerListeners(Game $game, Listener $listener){
+	public function registerListeners(Module $module, Listener $listener){
 		foreach((new \ReflectionClass($listener))->getMethods(\ReflectionMethod::IS_PUBLIC) as $method){
 			if($method->isStatic()){
 				continue;
@@ -118,41 +120,45 @@ class DynamicHub extends PluginBase{
 			if(count($parameters) !== 1){
 				continue;
 			}
-			if(!($parameters[0]->getClass() instanceof \ReflectionClass)){
+			$eventClass = $parameters[0]->getClass();
+			if(!($eventClass instanceof \ReflectionClass)){
 				continue;
 			}
-			if(!$parameters[0]->getClass()->isSubclassOf(Event::class)){
-				continue;
-			}
-			$priority = EventPriority::NORMAL;
-			$ignoreCancelled = false;
-			if(preg_match("/^[\t ]*\\* @priority[\t ]{1,}([a-zA-Z]{1,})/m", (string) $method->getDocComment(), $matches) > 0){
-				$matches[1] = strtoupper($matches[1]);
-				if(defined(EventPriority::class . "::" . $matches[1])){
-					$priority = constant(EventPriority::class . "::" . $matches[1]);
+			if(
+				$eventClass->isSubclassOf(PlayerEvent::class) or
+				$eventClass->isSubclassOf(EntityEvent::class) or
+				$eventClass->isSubclassOf(Event::class) and $eventClass->hasMethod("getPlayer")
+			){
+				$priority = EventPriority::NORMAL;
+				$ignoreCancelled = false;
+				if(preg_match("/^[\t ]*\\* @priority[\t ]{1,}([a-zA-Z]{1,})/m", (string) $method->getDocComment(), $matches) > 0){
+					$matches[1] = strtoupper($matches[1]);
+					if(defined(EventPriority::class . "::" . $matches[1])){
+						$priority = constant(EventPriority::class . "::" . $matches[1]);
+					}
 				}
-			}
-			if(preg_match("/^[\t ]*\\* @ignoreCancelled[\t ]{1,}([a-zA-Z]{1,})/m", (string) $method->getDocComment(), $matches) > 0){
-				$matches[1] = strtolower($matches[1]);
-				if($matches[1] === "false"){
-					$ignoreCancelled = false;
-				}elseif($matches[1] === "true"){
-					$ignoreCancelled = true;
+				if(preg_match("/^[\t ]*\\* @ignoreCancelled[\t ]{1,}([a-zA-Z]{1,})/m", (string) $method->getDocComment(), $matches) > 0){
+					$matches[1] = strtolower($matches[1]);
+					if($matches[1] === "false"){
+						$ignoreCancelled = false;
+					}elseif($matches[1] === "true"){
+						$ignoreCancelled = true;
+					}
 				}
+				$event = $eventClass->getName();
+				$reflection = new \ReflectionClass($event);
+				if(strpos((string) $reflection->getDocComment(), "@deprecated") !== false and $this->getServer()->getProperty("settings.deprecated-verbose", true)){
+					$this->getLogger()->warning($this->getServer()->getLanguage()->translateString("pocketmine.plugin.deprecatedEvent", [
+						$module->getOwner()->getName(),
+						$event,
+						get_class($listener) . "->" . $method->getName() . "()",
+					]));
+				}
+				if(!isset($this->listeners[$identifier = GameEventListener::identifier($event, $priority, $ignoreCancelled)])){
+					$this->listeners[$identifier] = new GameEventListener($this, $event, $priority, $ignoreCancelled);
+				}
+				$this->listeners[$identifier]->addHandler(new RegisteredGameEventHandler($module, $listener, $method->getName()));
 			}
-			$event = $parameters[0]->getClass()->getName();
-			$reflection = new \ReflectionClass($event);
-			if(strpos((string) $reflection->getDocComment(), "@deprecated") !== false and $this->getServer()->getProperty("settings.deprecated-verbose", true)){
-				$this->getLogger()->warning($this->getServer()->getLanguage()->translateString("pocketmine.plugin.deprecatedEvent", [
-					$game->getOwner()->getName(),
-					$event,
-					get_class($listener) . "->" . $method->getName() . "()",
-				]));
-			}
-			if(!isset($this->listeners[$identifier = GameEventListener::identifier($event, $priority, $ignoreCancelled)])){
-				$this->listeners[$identifier] = new GameEventListener($this, $event, $priority, $ignoreCancelled);
-			}
-			$this->listeners[$identifier]->addHandler(new RegisteredGameEventHandler($game, $listener, $method->getName()));
 		}
 	}
 

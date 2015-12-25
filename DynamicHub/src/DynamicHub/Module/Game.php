@@ -34,11 +34,11 @@ abstract class Game extends Module{
 		$this->hub = $hub;
 	}
 
-	public function getOwner() : Plugin{
+	public final function getOwner() : Plugin{
 		return $this->owner;
 	}
 
-	public function getHub(){
+	public final function getHub() : DynamicHub{
 		return $this->hub;
 	}
 

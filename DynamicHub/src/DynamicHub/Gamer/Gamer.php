@@ -79,7 +79,7 @@ class Gamer{
 	public function saveData(){
 	}
 
-	public function getId(){
+	public function getId() : int{
 		return $this->player->getId();
 	}
 }
