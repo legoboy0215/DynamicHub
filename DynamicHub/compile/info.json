@@ -1,0 +1,15 @@
+{
+	"name": "DynamicHub",
+	"author": "LegendsOfMCPE Team",
+	"authors": [
+		"PEMapModder"
+	],
+	"main": "DynamicHub\\DynamicHub",
+	"description": "DynamicHub provides the ability to code minigame plugins that can be adapted on any types of servers, hub servers or server networks with optimum performance and compatibility",
+	"website": "https://legendofmcpe.github.io/DynamicHub",
+	"version": {
+		"major": 2,
+		"minor": 0
+	},
+	"nextBuild": 1
+}
