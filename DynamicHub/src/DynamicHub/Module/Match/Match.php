@@ -16,6 +16,7 @@
 namespace DynamicHub\Module\Match;
 
 use DynamicHub\Gamer\Gamer;
+use DynamicHub\Module\Match\MapProvider\ThreadedMapProvider;
 use pocketmine\Player;
 
 abstract class Match{
@@ -70,6 +71,7 @@ abstract class Match{
 
 		// add
 		$this->players[$gamer->getId()] = $gamer;
+		$gamer->getPlayer()->teleport($this->getMatchConfig()->getNextPlayerJoinPosition());
 
 		// recalculate players
 		$count = count($this->players);
@@ -81,6 +83,8 @@ abstract class Match{
 			$this->startTimer = $config->minWaitTime;
 		}
 
+		$gamer->getPlayer()->teleport($this->getMatchConfig()->getNextPlayerJoinPosition());
+
 		return true;
 	}
 
@@ -89,15 +93,21 @@ abstract class Match{
 			$fault = MatchJoinFault::NO_PERM;
 			return false;
 		}
+		if($gamer->getModule() !== $this->game){
+			$fault = MatchJoinFault::NOT_IN_GAME;
+			return false;
+		}
 		$this->spectators[$gamer->getId()] = $gamer;
-		// TODO
-
+		$gamer->getPlayer()->teleport($this->getMatchConfig()->getNextSpectatorJoinPosition());
 		return true;
 	}
 
 	public function halfSecondTick(){
-		if($this->startTimer === 0){
-			$this->changeStateToPreparing();
+		if($this->state === MatchState::OPEN){
+			$this->startTimer--;
+			if($this->startTimer <= 0 and $this->game->canStartNewMatch()){
+				$this->changeStateToPreparing();
+			}
 		}
 	}
 
@@ -158,7 +168,7 @@ abstract class Match{
 		return [];
 	}
 
-	public abstract function getBaseWorldZip() : \ZipArchive;
+	public abstract function getBaseMap() : ThreadedMapProvider;
 
 	public abstract function getMatchConfig() : MatchBaseConfig;
 

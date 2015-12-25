@@ -49,7 +49,18 @@ abstract class MatchBasedGame extends Game implements NextIdFetchedCallback{
 		}
 	}
 
+	public function canStartNewMatch(){
+		$running = 0;
+		foreach($this->matches as $match){
+			if($match->getState() !== MatchState::OPEN and $match->getState() !== MatchState::GARBAGE){
+				$running++;
+			}
+		}
+		return $running < $this->getMaxRunningGames();
+	}
+
 	public abstract function getMinOpenGames() : int;
+	public abstract function getMaxRunningGames() : int;
 
 	public function onNextIdFetched(int $nextId){
 		$this->matches[$nextId] = $this->newMatch($nextId);

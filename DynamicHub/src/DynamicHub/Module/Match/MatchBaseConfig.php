@@ -25,4 +25,22 @@ class MatchBaseConfig{
 	public $minWaitTime;
 	public $maxWaitTime;
 	public $maxMatchTime;
+
+	// positions
+	public $playerJoinPositions = [];
+	public $spectatorJoinPositions = [];
+
+	public function getNextPlayerJoinPosition(){
+		if(next($this->playerJoinPositions) === false){
+			reset($this->playerJoinPositions);
+		}
+		return current($this->playerJoinPositions);
+	}
+
+	public function getNextSpectatorJoinPosition(){
+		if(next($this->spectatorJoinPositions) === false){
+			reset($this->spectatorJoinPositions);
+		}
+		return current($this->spectatorJoinPositions);
+	}
 }
