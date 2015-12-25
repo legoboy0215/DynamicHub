@@ -1,0 +1,15 @@
+sudo: false
+language: bash
+
+install:
+- cd ..
+- "git clone https://github.com/PEMapModder/PocketMine-MP.git pm -b php7 && cd pm && git submodule update --init --recursive"
+- wget -O - https://gist.githubusercontent.com/PEMapModder/8e3acbc287b78c66e51d/raw/a3c1a298e59932fbed85534a8d7fdade7a8dc942/compile.sh | bash -s -
+- mkdir plugins
+- $TRAVIS_BUILD_DIR/DynamicHub/compile.php
+# - cp -r $TRAVIS_BUILD_DIR/* plugins
+- wget -O plugins/DevTools.phar https://github.com/PocketMine/DevTools/releases/download/v1.10.0/DevTools_v1.10.0.phar
+- wget -O plugins/ServerKiller.php https://gist.githubusercontent.com/PEMapModder/48098c1348f3c38b97e9/raw/3e02dd9a2e997ae6cd93440a5a8c711b8815f47e/ServerKiller.php
+- cp $TRAVIS_BUILD_DIR/DynamicHub/compile/DynamicHub_Dev.phar plugins
+
+script: cd $TRAVIS_BUILD_DIR/../pm && ./start.sh --no-wizard
