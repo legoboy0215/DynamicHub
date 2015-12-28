@@ -16,6 +16,7 @@
 namespace DynamicHub\CaptureTheFlag;
 
 use DynamicHub\Gamer\Gamer;
+use DynamicHub\Module\Match\int;
 use DynamicHub\Module\Match\Match;
 use DynamicHub\Module\Match\MatchBasedGame;
 use DynamicHub\Utils\StaticTranslatable;
@@ -39,5 +40,9 @@ class CTFGame extends MatchBasedGame{
 
 	public function newMatch(int $matchId) : Match{
 		return new CTFMatch($this, $matchId);
+	}
+
+	public function getMaxRunningGames() : int{
+		// TODO: Implement getMaxRunningGames() method.
 	}
 }

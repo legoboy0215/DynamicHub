@@ -34,6 +34,9 @@ abstract class Game extends Module{
 		$this->hub = $hub;
 	}
 
+	public function halfSecondTick(){
+	}
+
 	public final function getOwner() : Plugin{
 		return $this->owner;
 	}

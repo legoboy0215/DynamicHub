@@ -77,6 +77,7 @@ class DynamicHub extends PluginBase{
 			new JoinListener($this);
 			$this->hubModule = new HubModule($this);
 		}
+		$this->getServer()->getScheduler()->scheduleDelayedRepeatingTask(new CallbackPluginTask($this, array($this, "halfSecondTick")), 10, 10);
 	}
 
 	public function onDisable(){
@@ -170,6 +171,15 @@ class DynamicHub extends PluginBase{
 		if(isset($this->gamers[$player->getId()])){
 			$this->gamers[$player->getId()]->onQuit();
 			unset($this->gamers[$player->getId()]);
+		}
+	}
+
+	public function halfSecondTick(){
+		foreach($this->loadedGames as $game){
+			$game->halfSecondTick();
+		}
+		foreach($this->gamers as $gamer){
+			$gamer->halfSecondTick();
 		}
 	}
 

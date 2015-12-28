@@ -24,16 +24,8 @@ abstract class MatchBasedGame extends Game implements NextIdFetchedCallback{
 	/** @type Match[] */
 	private $matches = [];
 
-	public function onLoaded(DynamicHub $hub){
-		parent::onLoaded($hub);
-		$this->getOwner()->getServer()->getScheduler()->scheduleRepeatingTask(
-			new CallbackPluginTask($this->getOwner(), [$this, "halfSecondTick"]), 10);
-	}
-
-	/**
-	 * @internal
-	 */
 	public function halfSecondTick(){
+		parent::halfSecondTick();
 		$count = 0;
 		foreach($this->matches as $match){
 			if($match->getState() === MatchState::OPEN){

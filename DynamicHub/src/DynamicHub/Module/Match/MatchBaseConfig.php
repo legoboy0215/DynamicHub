@@ -25,6 +25,7 @@ class MatchBaseConfig{
 	public $minWaitTime;
 	public $maxWaitTime;
 	public $maxMatchTime;
+	public $maxPrepTime;
 
 	// positions
 	public $playerJoinPositions = [];

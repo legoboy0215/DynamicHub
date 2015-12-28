@@ -27,6 +27,9 @@ class Gamer{
 	/** @type GamerData */
 	private $data = null;
 
+	/** @type GamerStatus */
+	private $status = null;
+
 	public function __construct(DynamicHub $hub, Player $player){
 		$this->hub = $hub;
 		$this->player = $player;
@@ -81,5 +84,9 @@ class Gamer{
 
 	public function getId() : int{
 		return $this->player->getId();
+	}
+
+	public function halfSecondTick(){
+		$this->getPlayer()->sendTip($this->status->toString());
 	}
 }

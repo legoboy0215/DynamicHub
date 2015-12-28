@@ -28,7 +28,7 @@ abstract class Match{
 	private $players = [], $spectators = [];
 
 	/** @type int in half-seconds */
-	private $startTimer;
+	private $startTimer, $prepTimer;
 
 	protected function __construct(MatchBasedGame $game, $matchId){
 		$this->game = $game;
@@ -104,11 +104,27 @@ abstract class Match{
 
 	public function halfSecondTick(){
 		if($this->state === MatchState::OPEN){
-			$this->startTimer--;
-			if($this->startTimer <= 0 and $this->game->canStartNewMatch()){
+			$this->tickOpen();
+		}elseif($this->state === MatchState::PREPARING){
+			$this->tickPrepare();
+		}
+	}
+
+	protected function tickOpen(){
+		$this->startTimer--;
+		if($this->startTimer <= 0){
+			if($this->game->canStartNewMatch()){
 				$this->changeStateToPreparing();
+			}elseif($this->startTimer === 0){
+				foreach($this->players as $player){
+
+				}
 			}
 		}
+	}
+
+	protected function tickPrepare(){
+		$this->prepTimer--;
 	}
 
 	public final function hasJoinPermission(Player $player) : bool{
@@ -174,7 +190,7 @@ abstract class Match{
 
 	public function changeStateToPreparing(){
 		$this->state = MatchState::PREPARING;
-		// TODO implement function
+		$this->prepTimer = $this->getMatchConfig()->maxPrepTime;
 	}
 
 	public function changeStateToLoading(){
@@ -196,4 +212,5 @@ abstract class Match{
 		$this->state = MatchState::GARBAGE;
 		// TODO implement function
 	}
+
 }

@@ -15,6 +15,7 @@
 
 namespace DynamicHub\CaptureTheFlag;
 
+use DynamicHub\Module\Match\MapProvider\ThreadedMapProvider;
 use DynamicHub\Module\Match\Match;
 use DynamicHub\Module\Match\MatchBaseConfig;
 
@@ -29,5 +30,9 @@ class CTFMatch extends Match{
 
 	public function getMatchConfig() : MatchBaseConfig{
 		// TODO: Implement getMatchConfig() method.
+	}
+
+	public function getBaseMap() : ThreadedMapProvider{
+		// TODO: Implement getBaseMap() method.
 	}
 }
