@@ -31,7 +31,7 @@ class StaticTranslatable implements Translatable{
 		return isset($this->langs[$lang]) ? $this->langs[$lang] : $this->langs["en"];
 	}
 
-	public function __toString(){
+	public function __toString() : string{
 		return $this->get();
 	}
 }

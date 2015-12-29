@@ -16,9 +16,7 @@
 namespace DynamicHub\Module\Match;
 
 use DynamicHub\DataProvider\NextIdFetchedCallback;
-use DynamicHub\DynamicHub;
 use DynamicHub\Module\Game;
-use DynamicHub\Utils\CallbackPluginTask;
 
 abstract class MatchBasedGame extends Game implements NextIdFetchedCallback{
 	/** @type Match[] */
@@ -44,7 +42,11 @@ abstract class MatchBasedGame extends Game implements NextIdFetchedCallback{
 	public function canStartNewMatch(){
 		$running = 0;
 		foreach($this->matches as $match){
-			if($match->getState() !== MatchState::OPEN and $match->getState() !== MatchState::GARBAGE){
+			if(
+				$match->getState() !== MatchState::OPEN and
+				$match->getState() !== MatchState::PREPARING and
+				$match->getState() !== MatchState::GARBAGE
+			){
 				$running++;
 			}
 		}
@@ -52,6 +54,7 @@ abstract class MatchBasedGame extends Game implements NextIdFetchedCallback{
 	}
 
 	public abstract function getMinOpenGames() : int;
+
 	public abstract function getMaxRunningGames() : int;
 
 	public function onNextIdFetched(int $nextId){

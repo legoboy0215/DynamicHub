@@ -18,5 +18,5 @@ namespace DynamicHub\Utils;
 interface Translatable{
 	public function get(string $lang = "en") : string;
 
-	public function __toString();
+	public function __toString() : string;
 }

@@ -16,7 +16,6 @@
 namespace DynamicHub\CaptureTheFlag;
 
 use DynamicHub\Gamer\Gamer;
-use DynamicHub\Module\Match\int;
 use DynamicHub\Module\Match\Match;
 use DynamicHub\Module\Match\MatchBasedGame;
 use DynamicHub\Utils\StaticTranslatable;

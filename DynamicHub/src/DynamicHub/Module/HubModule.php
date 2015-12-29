@@ -19,6 +19,7 @@ use DynamicHub\DynamicHub;
 use DynamicHub\Gamer\Gamer;
 use DynamicHub\Utils\StaticTranslatable;
 use DynamicHub\Utils\Translatable;
+use pocketmine\plugin\Plugin;
 
 class HubModule extends Module{
 	const NAME = "Hub";
@@ -39,5 +40,13 @@ class HubModule extends Module{
 
 	public function onQuit(Gamer $gamer){
 
+	}
+
+	public function getHub() : DynamicHub{
+		return $this->main;
+	}
+
+	public function getOwner() : Plugin{
+		return $this->main;
 	}
 }

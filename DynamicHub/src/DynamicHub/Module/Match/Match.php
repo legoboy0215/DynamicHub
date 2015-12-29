@@ -117,7 +117,9 @@ abstract class Match{
 				$this->changeStateToPreparing();
 			}elseif($this->startTimer === 0){
 				foreach($this->players as $player){
-
+					$player->getPlayer()->sendMessage("Waiting for an available map..."); // TODO translate
+				}foreach($this->spectators as $spectator){
+					$spectator->getPlayer()->sendMessage("Waiting for an available map...");
 				}
 			}
 		}
@@ -125,6 +127,9 @@ abstract class Match{
 
 	protected function tickPrepare(){
 		$this->prepTimer--;
+		if($this->prepTimer === 0){
+
+		}
 	}
 
 	public final function hasJoinPermission(Player $player) : bool{

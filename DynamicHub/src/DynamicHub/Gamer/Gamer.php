@@ -87,6 +87,6 @@ class Gamer{
 	}
 
 	public function halfSecondTick(){
-		$this->getPlayer()->sendTip($this->status->toString());
+		$this->getPlayer()->sendTip($this->status->get()); // TODO translation support
 	}
 }

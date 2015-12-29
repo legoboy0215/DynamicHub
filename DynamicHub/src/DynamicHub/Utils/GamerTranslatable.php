@@ -27,4 +27,8 @@ abstract class GamerTranslatable implements Translatable{
 	public function getGamer() : Gamer{
 		return $this->gamer;
 	}
+
+	public function __toString() : string{
+		return $this->get();
+	}
 }
