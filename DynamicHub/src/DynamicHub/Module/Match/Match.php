@@ -40,6 +40,10 @@ abstract class Match{
 		return $this->game;
 	}
 
+	public function getMatchId() : int{
+		return $this->matchId;
+	}
+
 	public function getState() : int{
 		return $this->state;
 	}
@@ -118,7 +122,8 @@ abstract class Match{
 			}elseif($this->startTimer === 0){
 				foreach($this->players as $player){
 					$player->getPlayer()->sendMessage("Waiting for an available map..."); // TODO translate
-				}foreach($this->spectators as $spectator){
+				}
+				foreach($this->spectators as $spectator){
 					$spectator->getPlayer()->sendMessage("Waiting for an available map...");
 				}
 			}
@@ -128,8 +133,11 @@ abstract class Match{
 	protected function tickPrepare(){
 		$this->prepTimer--;
 		if($this->prepTimer === 0){
-
 		}
+	}
+
+	public function onMapLoaded(string $dir){
+		// TODO implement
 	}
 
 	public final function hasJoinPermission(Player $player) : bool{

@@ -15,6 +15,17 @@
 
 namespace DynamicHub\Module\Match\MapProvider;
 
-abstract class ThreadedMapProvider extends \Threaded{
-	public abstract function extractTo(string $dir) : bool;
+use DynamicHub\Utils\FileUtils;
+use pocketmine\scheduler\AsyncTask;
+
+class DeleteMapTask extends AsyncTask{
+	private $dir;
+
+	public function __construct(string $dir){
+		$this->dir = $dir;
+	}
+
+	public function onRun(){
+		FileUtils::removeDirectory($this->dir);
+	}
 }

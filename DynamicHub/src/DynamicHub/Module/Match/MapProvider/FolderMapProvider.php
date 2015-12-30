@@ -15,6 +15,19 @@
 
 namespace DynamicHub\Module\Match\MapProvider;
 
-abstract class ThreadedMapProvider extends \Threaded{
-	public abstract function extractTo(string $dir) : bool;
+use DynamicHub\Utils\FileUtils;
+
+class FolderMapProvider extends ThreadedMapProvider{
+	private $dir;
+
+	public function __construct(string $dir){
+		if(!is_dir($dir)){
+			throw new \InvalidArgumentException($dir . " is not a directory!");
+		}
+		$this->dir = $dir;
+	}
+
+	protected function extractTo(string $dir) : bool{
+		FileUtils::copyDirectory($this->dir, $dir);
+	}
 }

@@ -203,6 +203,10 @@ class DynamicHub extends PluginBase{
 		return $this->gamers[$player->getId()] ?? null;
 	}
 
+	public function getLoadedGame(string $name){
+		return $this->loadedGames[$name] ?? null;
+	}
+
 	public function isSingle() : bool{
 		return $this->single;
 	}
